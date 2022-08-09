@@ -8,7 +8,7 @@ bucket='rcarsvehicle'
 
 def vehicle(bot, trigger):
     n=trigger.nick
-    r=" has a: "
+    r=" has: "
     l=""
     if not trigger.group(2):
         fetch=existdb(n.lower())
@@ -17,7 +17,7 @@ def vehicle(bot, trigger):
         else:
             r=": Tell me what vehicle you have: "
     else:
-        t = unicodedata.normalize('NFKD', trigger.group(2)).encode('ascii', 'ignore').split(' ')
+        t = unicodedata.normalize('NFKD', trigger.group(2)).split(' ')
         if len(t) >= 1:
             if t[0] == 'set':
                 if len(t) < 2:
@@ -38,8 +38,7 @@ def vehicle(bot, trigger):
 def readdb(key):
     r=redis.Redis(host='localhost',port=6379,db=0,decode_responses=True)
     modkey = bucket + key
-    print r.get(modkey)
-    return b.get(modkey)
+    return r.get(modkey)
 
 
 def existdb(key):
