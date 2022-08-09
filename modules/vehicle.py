@@ -1,5 +1,5 @@
 import sopel
-import riak
+import redis
 import unicodedata
 
 bucket='rcarsvehicle'
@@ -11,9 +11,9 @@ def vehicle(bot, trigger):
     r=" has a: "
     l=""
     if not trigger.group(2):
-        fetch=readdbattr(n.lower(),'vehicle')
+        fetch=existdb(n.lower())
         if fetch:
-            l=fetch
+            l=readdb(n.lower())
         else:
             r=": Tell me what vehicle you have: "
     else:
@@ -23,45 +23,32 @@ def vehicle(bot, trigger):
                 if len(t) < 2:
                     r=': You forgot to tell me what vehicle you have!'
                 else:
-                    updatedbattr(n.lower(), 'vehicle',trigger.group(2)[4:])
+                    updatedbattr(n.lower(), trigger.group(2)[4:])
                     return bot.say('Saving your vehicle!')
             else:
                 n=t[0].lower()
-                fetch=readdbattr(n,'vehicle')
+                fetch=existdb(n)
                 if fetch:
-                    l=fetch
+                    l=readdb(n)
                 else:
                     r=": Give me a vehicle with .vehicle set <vehicle type>"
     return bot.say(n + r + l)
 
 
 def readdb(key):
-    r=riak.RiakClient(pb_port=8087, protocol='pbc')
-    b=r.bucket(bucket)
-    #   print 'readdb data'+ str(b.get(key).data)
-    #return b.get(key).get_data()
-    print b.get(key).data
-    return b.get(key).data
+    r=redis.Redis(host='localhost',port=6379,db=0,decode_responses=True)
+    modkey = bucket + key
+    print r.get(modkey)
+    return b.get(modkey)
 
-def readdbattr(key,attr):
-    r=readdb(key)
-    if r:
-        try:
-            return r[attr]
-        except:
-            return None
-    return None
 
-def updatedbattr(key, attr, data):                                                                                                                                                     
-    old=readdb(key)
-    if old:
-        old[attr]=data
-    else:
-        old={attr:data}
-    savedb(key,old)
+def existdb(key):
+    r=redis.Redis(host='localhost',port=6379,db=0,decode_responses=True)
+    modkey = bucket + key
+    return r.exists(modkey)
 
-def savedb(key, data):                                                                                                                                                       
-    db=riak.RiakClient(pb_port=8087, protocol='pbc')
-    user_bucket=db.bucket(bucket)
-    new_user=user_bucket.new(key, data)
-    new_user.store()
+
+def updatedbattr(key, data):
+    r=redis.Redis(host='localhost',port=6379,db=0,decode_responses=True)
+    modkey = bucket + key
+    r.set(modkey, data)
